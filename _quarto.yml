@@ -3,20 +3,26 @@ project:
   output-dir: docs
 
 website:
-  title: "blog"
+  title: "Data Brain Storm"
   navbar:
     right:
       - about.qmd
       - icon: github
-        href: https://github.com/
+        href: https://github.com/JayLBean/
       - icon: twitter
         href: https://twitter.com
+  page-footer: 
+    center: "© 2026 Yusheng Li. Powered by Quarto."
+
 format:
   html:
-    theme:
-      - cosmo
-      - brand
-    css: styles.css
+    theme: 
+      light: litera
+    css: styles.css 
+    toc: true 
+    toc-title: "On this page"
+    code-copy: true 
+    highlight-style: github 
 
 
 
