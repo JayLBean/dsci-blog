@@ -1,1 +1,33 @@
-/* css styles */
+p {
+  line-height: 1.8;       
+  margin-bottom: 1.5rem;  
+  font-size: 1.1rem;      
+}
+
+
+li {
+  margin-bottom: 0.5rem;  
+  line-height: 1.7;
+}
+
+
+h2 {
+  margin-top: 3rem;       
+  margin-bottom: 1.5rem;
+}
+
+h3 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+
+div.sourceCode {
+  margin-bottom: 1.5rem; 
+}
+
+
+img, figure {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
