@@ -7,11 +7,53 @@
     "text": "About this blog"
   },
   {
-    "objectID": "posts/welcome/index.html",
-    "href": "posts/welcome/index.html",
-    "title": "Welcome To My Blog",
-    "section": "",
-    "text": "This is the first post in a Quarto blog. Welcome!\n\nSince this post doesn’t specify an explicit image, the first image in the post will be used in the listing page of posts."
+    "objectID": "posts/sql-flask-nextjs-tutorial/index.html#introduction",
+    "href": "posts/sql-flask-nextjs-tutorial/index.html#introduction",
+    "title": "From Data to UI: Building a Full-Stack Music Store with SQL, Flask, and Next.js",
+    "section": "Introduction",
+    "text": "Introduction\nAs data scientists, we often live in Jupyter Notebooks. We clean data, build models, and generate insights. But there is a common “last-mile” problem: How do we deliver these insights to a non-technical end-user?\nSending a CSV file or a static PDF report is often not enough. To truly make data accessible, we need to wrap it in an interactive, user-friendly interface. This brings us into the realm of Full-Stack Data Science.\nIn this tutorial, we will bridge the gap between backend data analysis and frontend user experience. We will move beyond simple scripts to build a production-ready Web Application.\n\nWhat We Are Building\nWe will build a Digital Media Store (a platform for browsing Music and Art). This project isn’t just a “Hello World” example; it mimics a real-world e-commerce structure featuring:\n\nA Structured Database: Managing relational data (Tracks, Albums, Artists, and Genres).\nA RESTful API: Serving data dynamically to any client.\nA Modern Frontend: A reactive user interface that feels like a native app.\n\n\n\nThe Tech Stack: Why This Combination?\nYou might ask: “Why not just use Streamlit or Dash?” While those tools are excellent for rapid prototyping, they often lack the flexibility needed for consumer-facing products. To have full control over the user experience (UX), we will use a robust industry-standard stack:\n\nPostgreSQL (Database): The gold standard for open-source relational databases. Unlike a simple CSV or Excel file, SQL ensures our data is consistent, queryable, and scalable.\nFlask (Backend): A lightweight Python web framework. Since Python is the native language of data science, Flask allows us to seamlessly integrate our data logic with web server capabilities.\nNext.js (Frontend): A React framework that enables us to build fast, SEO-friendly web pages. It handles the “visual” part of our store, fetching data from our Flask backend and displaying it beautifully to the user.\n\n\n\n\n\n\n\nLearning Goal\n\n\n\nBy the end of this tutorial, you won’t just have a website; you will understand the data flow of a modern web application—from a raw SQL query to a rendered pixel on the user’s screen."
+  },
+  {
+    "objectID": "posts/sql-flask-nextjs-tutorial/index.html#project-architecture",
+    "href": "posts/sql-flask-nextjs-tutorial/index.html#project-architecture",
+    "title": "From Data to UI: Building a Full-Stack Music Store with SQL, Flask, and Next.js",
+    "section": "Project Architecture",
+    "text": "Project Architecture\nBefore writing code, it is crucial to understand how our system components talk to each other. We are adopting a Decoupled Architecture (separation of concerns), where the Backend (API) and Frontend (UI) are independent projects.\n\n\n\n\n\nflowchart LR\n    User[End User] &lt;--&gt;|Interacts| UI[Next.js Frontend]\n    UI &lt;--&gt;|JSON Requests| API[Flask API]\n    API &lt;--&gt;|SQL Queries| DB[(PostgreSQL DB)]\n    \n    subgraph Backend Layer\n    DB\n    API\n    end\n    \n    subgraph Frontend Layer\n    UI\n    end\n\n\n\n High-level Data Flow of the Music Store \n\n\n\nAs shown in the diagram above:\n\nThe User clicks a button on the webpage.\nNext.js sends a request to our Python server.\nFlask interprets the request and queries the database.\nPostgreSQL returns the raw data.\nFlask formats this data into JSON and sends it back.\nNext.js renders the data into HTML for the user to see."
+  },
+  {
+    "objectID": "posts/sql-flask-nextjs-tutorial/index.html#step-1-architecture-setup",
+    "href": "posts/sql-flask-nextjs-tutorial/index.html#step-1-architecture-setup",
+    "title": "From Data to UI: Building a Full-Stack Music Store with SQL, Flask, and Next.js",
+    "section": "Step 1: Architecture & Setup",
+    "text": "Step 1: Architecture & Setup\nBefore writing a single line of query, we need to design our system’s foundation. This stage separates a “script” from an “application.”\n\n1.1 Version Control & Environment\nA robust project starts with a clean environment. We initialize our Git repository to track changes, but more importantly, we configure it to ignore sensitive or heavy files.\nWe create a .gitignore file to ensure we don’t accidentally commit our virtual environment, database binaries, or API keys.\n# Terminal commands to setup the project\ngit init\npython -m venv venv\nsource venv/bin/activate  # or venv\\Scripts\\activate on Windows\npip install flask sqlalchemy pandas psycopg2-binary\nCrucial: Our .gitignore file looks like this:\nvenv/\n__pycache__/\n.env            &lt;-- Never commit secrets!\ndata/*.db       &lt;-- Don't commit local binary databases\n.DS_Store\n\n\n\n1.2 Data Architecture Design\nOur raw data comes from a flat CSV file (backend/data/data.csv). However, a flat file is inefficient for a store application where we need to query “all tracks by one artist” instantly.\nWe transform this flat data into a Relational Model (3rd Normal Form). We identified three core entities:\n\nTracks: The individual songs.\nAlbums: Collections of tracks.\nGenres: Categories.\n\nHere is the Entity Relationship Diagram (ERD) representing our schema:\n\n\n\n\n\nerDiagram\n    ALBUM ||--|{ TRACK : contains\n    GENRE ||--|{ TRACK : classifies\n    \n    TRACK {\n        int id PK\n        string title\n        string composer\n        int milliseconds\n        int album_id FK\n        int genre_id FK\n    }\n    ALBUM {\n        int id PK\n        string title\n        string artist\n    }\n    GENRE {\n        int id PK\n        string name\n    }\n\n\n\n Database Schema Design \n\n\n\nBy designing this upfront, we ensure our SQL queries in the backend will be efficient and our data remains consistent."
+  },
+  {
+    "objectID": "posts/sql-flask-nextjs-tutorial/index.html#step-2-the-backend-workflow-flask",
+    "href": "posts/sql-flask-nextjs-tutorial/index.html#step-2-the-backend-workflow-flask",
+    "title": "From Data to UI: Building a Full-Stack Music Store with SQL, Flask, and Next.js",
+    "section": "Step 2: The Backend Workflow (Flask)",
+    "text": "Step 2: The Backend Workflow (Flask)\nInstead of hardcoding logic, we treat our Backend as a “black box” that strictly speaks JSON. This separation allows us to change the database or internal logic later without breaking the frontend.\n\n2.1 Project Structure\nSecurity is our priority. We never commit secrets (like database passwords) to GitHub. Instead, we use environment variables.\nbackend/\n├── app.py              # Entry point\n├── config.py           # Loads env variables (Safe!)\n├── requirements.txt    # Dependencies\n└── data/               # Local database storage\n\n\n\n2.2 API Design Pattern\nWe define “Routes” that correspond to our data entities. Here is the conceptual workflow for a typical API endpoint:\n\nReceive Request: The server listens for a specific URL (e.g., /api/arts).\nQuery Database: It asks PostgreSQL for all items in that category.\nSerialize: It converts the SQL rows into a JSON list.\nResponse: It sends the JSON back with a 200 OK status.\n\nWe use Flask-CORS to whitelist our frontend domain, ensuring that only our website can fetch this data."
+  },
+  {
+    "objectID": "posts/sql-flask-nextjs-tutorial/index.html#step-3-the-frontend-workflow-next.js",
+    "href": "posts/sql-flask-nextjs-tutorial/index.html#step-3-the-frontend-workflow-next.js",
+    "title": "From Data to UI: Building a Full-Stack Music Store with SQL, Flask, and Next.js",
+    "section": "Step 3: The Frontend Workflow (Next.js)",
+    "text": "Step 3: The Frontend Workflow (Next.js)\nFor the User Interface, we chose Next.js for its File-System Based Routing. This means the folder structure is the website map, which is incredibly intuitive for data scientists used to organizing file directories.\n\n3.1 Routing Logic\nLooking at our app folder, we can instantly see the site map:\napp/\n├── page.tsx                # Homepage (/)\n├── arts/\n│   ├── page.tsx            # /arts\n│   └── [category]/         # Dynamic Route\n│       └── page.tsx        # /arts/painting, /arts/sculpture\n└── music/\n    └── [id]/               # Dynamic Route\n        └── page.tsx        # /music/102, /music/505\n\n\n\n3.2 Dynamic Data Fetching\nThe power of Next.js lies in dynamic segments like [id].\nWhen a user visits /music/102:\n\nNext.js captures 102 as the id parameter.\nIt triggers a server-side fetch to our Flask backend: GET /api/music/102.\nOnce the JSON arrives, it populates the ProductCard component.\n\nThis approach creates a Single Page Application (SPA) feel—users can browse thousands of products without the page ever fully reloading.\n// Conceptual workflow in Next.js Page\nasync function ProductPage({ params }) {\n  // 1. Get ID from URL\n  const { id } = params;\n  \n  // 2. Fetch Data from our Python Backend\n  const data = await getMusicData(id);\n  \n  // 3. Render UI\n  return (\n    &lt;div className=\"container\"&gt;\n       &lt;h1&gt;{data.title}&lt;/h1&gt;\n       &lt;AudioPlayer src={data.sample_url} /&gt;\n    &lt;/div&gt;\n  )\n}\n\n\n\n\n\n\n\nDevelopment Tip\n\n\n\nAlways use try-catch blocks when fetching data. If the Flask backend is offline, the Frontend should gracefully show a “Service Unavailable” message instead of crashing."
+  },
+  {
+    "objectID": "posts/sql-flask-nextjs-tutorial/index.html#step-4-going-live-deployment",
+    "href": "posts/sql-flask-nextjs-tutorial/index.html#step-4-going-live-deployment",
+    "title": "From Data to UI: Building a Full-Stack Music Store with SQL, Flask, and Next.js",
+    "section": "Step 4: Going Live (Deployment)",
+    "text": "Step 4: Going Live (Deployment)\nBuilding on localhost is safe, but shipping to production is where the real learning happens. Since we decoupled our architecture, we can host each component on the platform best suited for it.\n\n4.1 Database ( The Cloud Layer )\nWe cannot use our local mydata.db (SQLite) in a scalable production environment. Instead, we migrate to a cloud-hosted PostgreSQL instance. * Platform: Neon or Supabase (Free Tier). * Action: We update our config.py in the backend to point to the new remote connection string instead of the local file.\n\n\n4.2 Backend ( The Logic Layer )\nOur Flask API needs a server that supports Python and Docker. * Platform: Render or Railway. * Configuration: We use the requirements.txt file to tell the cloud server which packages (Flask, SQLAlchemy, Pandas) to install. * The Crucial Step: We must set Environment Variables on the server dashboard to store our database URL safely.\n\n\n4.3 Frontend ( The Presentation Layer )\nSince we are using Next.js, the natural home for our frontend is Vercel (the creators of Next.js). * Integration: Vercel connects directly to our GitHub repository. Every time we push code to the main branch, Vercel automatically rebuilds and deploys the new version of the site. * Rewrites: We configure Vercel to proxy any requests starting with /api/ to our Render backend, ensuring the user’s browser never faces CORS errors.\n\n\n\n\n\n\nSecurity First\n\n\n\nNever commit your .env file or API keys to GitHub! Always use the “Environment Variables” settings in your hosting provider’s dashboard to inject secrets at runtime."
+  },
+  {
+    "objectID": "posts/sql-flask-nextjs-tutorial/index.html#conclusion",
+    "href": "posts/sql-flask-nextjs-tutorial/index.html#conclusion",
+    "title": "From Data to UI: Building a Full-Stack Music Store with SQL, Flask, and Next.js",
+    "section": "Conclusion",
+    "text": "Conclusion\nWe started this journey with a static CSV file and ended with a fully functional, cloud-hosted digital media store.\nBy stepping out of the Jupyter Notebook and embracing a Full-Stack architecture (SQL-Flask-Next.js), we achieved something powerful: Accessibility. We turned raw data into an experience that anyone—not just data scientists—can explore and enjoy.\n\nFuture Improvements\nWhile our application is live, product development never ends. Here is what I plan to implement in Version 2.0: 1. Search Functionality: Implementing a search bar to filter tracks by composer. 2. User Authentication: Allowing users to create accounts and save their “Favorite” tracks. 3. Payment Integration: Connecting a Stripe API to simulate real purchases.\nThank you for reading! If you are a data scientist looking to expand your toolkit, I highly recommend trying to build a small full-stack app. It changes how you think about data."
   },
   {
     "objectID": "posts/post-with-code/index.html",
@@ -21,10 +63,17 @@
     "text": "This is a post with executable code."
   },
   {
+    "objectID": "posts/welcome/index.html",
+    "href": "posts/welcome/index.html",
+    "title": "Welcome To My Blog",
+    "section": "",
+    "text": "This is the first post in a Quarto blog. Welcome!\n\nSince this post doesn’t specify an explicit image, the first image in the post will be used in the listing page of posts."
+  },
+  {
     "objectID": "index.html",
     "href": "index.html",
     "title": "Data Brain Storm",
     "section": "",
-    "text": "Post With Code\n\n\n\n\n\n\n\n\nJan 13, 2026\n\n1 min\n\n\n\n\n\n\nWelcome To My Blog\n\n\n\n\n\n\n\n\nJan 10, 2026\n\n1 min\n\n\n\n\nNo matching items"
+    "text": "From Data to UI: Building a Full-Stack Music Store with SQL, Flask, and Next.js\n\n\nA comprehensive tutorial on transforming raw data into an interactive web application using a modern tech stack.\n\n\n\n\n\nJan 15, 2026\n\n9 min\n\n\n\n\n\n\nPost With Code\n\n\n\n\n\n\n\n\nJan 13, 2026\n\n1 min\n\n\n\n\n\n\nWelcome To My Blog\n\n\n\n\n\n\n\n\nJan 10, 2026\n\n1 min\n\n\n\n\nNo matching items"
   }
 ]
